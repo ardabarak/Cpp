@@ -4,40 +4,77 @@
 #include <iostream>
 using namespace std;
 
-const char* checkStr(const char* s1, const char* s2) {
-    while (*s1 && *s2) // seeing both strings every character
-    {    
-        if (*s1 < *s2) 
-        {
-            return s1;
-        } else if (*s1 > *s2) {
-            return s2;
+
+// A: course class
+class Course
+{
+private:
+    int courseCode;
+    int courseHours;
+public:
+    Course(int code, int hours) : courseCode(code), courseHours(hours) {} //constructor
+
+    int getNum() const   {return courseCode;}  //getter for coursecode
+
+    int getHours() const  {return courseHours;} //getter for coursehours
+
+};
+
+
+// B: student class
+class Student
+{
+private:
+    int studentID;
+    int maxCourses;
+    int numCourses;
+    Course** courseList;
+    int* grades;
+
+public:
+    Student(int idNo, int maxCo) : studentID(idNo), maxCourses(maxCo), numCourses(0) { //constructor
+        courseList = new Course*[maxCourses];
+        grades = new int[maxCourses];
+    }
+
+    ~Student() { //destructor
+        delete[] courseList;
+        delete[] grades;
+    }
+
+    int average() const { //calc average
+        int sum =0;
+        for (int i = 0; i < numCourses; i++) {
+            sum += grades[i];
         }
-        s1++;
-        s2++;
+        return (numCourses > 0) ? ((int) sum/numCourses) : (0);
     }
 
-    //the first one to end is first
-    if (*s1 == '\0') {
-        return s1;
-    } else {
-        return s2;
+    int totalHours() const { //calc total hours
+        int total = 0;
+        for (int i = 0; i < numCourses; i++) {
+            total += courseList[i]->getHours();
+        } return total;
     }
-}
 
+    void addCourse(Course* course, int grade) { //adding a course
+        if (numCourses < maxCourses) {
+            courseList[numCourses] = course;
+            grades[numCourses] = grade;
+            numCourses++;
+        } else {
+            cout << " - Max number of courses enrolled - " << endl;
+        }
+    }
+
+};
 int main() {
-    char str1[40], str2[40];
-    //taking the 2 inputs
-    cout << "\ninput your 1st string:     ";
-    cin >> str1;
-    cout << "\ninput your 2nd string:     ";
-    cin >> str2;
-
-    const char* firstWord = checkStr(str1, str2);
-    if (firstWord == str1) {
-        cout << "1st string is alphabetically first" << endl;
-    } else {
-        cout << "2nd string is alphabetically first" << endl;
-    }
+    Course courseA(1234, 3);
+    Course courseB(4321, 6);
+    Student student(300123456, 5);
+    student.addCourse(&courseA, 85); //course & grades
+    student.addCourse(&courseB, 95);
+    cout << "Average:       " << student.average() << endl; //calc and show students average and total hours
+    cout << "Total Hours:   " << student.totalHours() << endl;
     return 0;
 }
