@@ -2,79 +2,41 @@
 // 300129340
 
 #include <iostream>
-using namespace std;
+#include <cmath>
+#include <stdexcept>
+#include <iomanip>
 
-
-// A: course class
-class Course
-{
-private:
-    int courseCode;
-    int courseHours;
+class MathLibrary {
 public:
-    Course(int code, int hours) : courseCode(code), courseHours(hours) {} //constructor
+    static inline double squareRoot(double numInp) {//static sqqrt
+        if (numInp < 0) {
+            throw std::invalid_argument("Error:Negative input provided.");
+        }return std::sqrt(numInp);
+    }
 
-    int getNum() const   {return courseCode;}  //getter for coursecode
-
-    int getHours() const  {return courseHours;} //getter for coursehours
-
+    static inline double logarithm(double numInp) {//static log
+        if (numInp <= 0) {
+            throw std::invalid_argument("Error:Negative input provided.");
+        }return std::log(numInp);
+    }
 };
 
-
-// B: student class
-class Student
-{
-private:
-    int studentID;
-    int maxCourses;
-    int numCourses;
-    Course** courseList;
-    int* grades;
-
-public:
-    Student(int idNo, int maxCo) : studentID(idNo), maxCourses(maxCo), numCourses(0) { //constructor
-        courseList = new Course*[maxCourses];
-        grades = new int[maxCourses];
-    }
-
-    ~Student() { //destructor
-        delete[] courseList;
-        delete[] grades;
-    }
-
-    int average() const { //calc average
-        int sum =0;
-        for (int i = 0; i < numCourses; i++) {
-            sum += grades[i];
-        }
-        return (numCourses > 0) ? ((int) sum/numCourses) : (0);
-    }
-
-    int totalHours() const { //calc total hours
-        int total = 0;
-        for (int i = 0; i < numCourses; i++) {
-            total += courseList[i]->getHours();
-        } return total;
-    }
-
-    void addCourse(Course* course, int grade) { //adding a course
-        if (numCourses < maxCourses) {
-            courseList[numCourses] = course;
-            grades[numCourses] = grade;
-            numCourses++;
-        } else {
-            cout << " - Max number of courses enrolled - " << endl;
-        }
-    }
-
-};
 int main() {
-    Course courseA(1234, 3);
-    Course courseB(4321, 6);
-    Student student(300123456, 5);
-    student.addCourse(&courseA, 85); //course & grades
-    student.addCourse(&courseB, 95);
-    cout << "Average:       " << student.average() << endl; //calc and show students average and total hours
-    cout << "Total Hours:   " << student.totalHours() << endl;
+    double numInp;
+    
+    try { //sqrt
+        std::cout << "Enter a number to calc its square root:   ";
+        std::cin >> numInp;
+        std::cout << "Square root of " << numInp << " is " << MathLibrary::squareRoot(numInp) << std::endl;
+    }catch (const std::invalid_argument& e) {
+        std::cout << "Error:    " << e.what() << std::endl;
+    }
+    try { //log
+        std::cout << "Enter a number to calc its log:           ";
+        std::cin >> numInp;
+        std::cout << "Logarithm of " << numInp << " is " << MathLibrary::logarithm(numInp) << std::endl;
+    }catch (const std::invalid_argument& e) {
+        std::cout << "Error:    " << e.what() << std::endl;
+    }
     return 0;
 }
