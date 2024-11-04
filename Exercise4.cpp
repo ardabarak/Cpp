@@ -1,101 +1,111 @@
 // Arda Barak
 // 300129340
+// Exercise 4
 
 #include <iostream>
-#include <cmath>
 #include <string>
-// #include <corecrt_math_defines.h>
+#include <vector>
+#include <memory>
+#include <algorithm>
+using namespace std;
 
-class Shape {
+class Vehicle {                 //base class Vehicle
+protected:
+    string model;
 public:
-    virtual void draw() const = 0;
-    virtual double area() const = 0;
-    virtual ~Shape() {}
+    Vehicle(const string& mdl) : model(mdl) {}
+    virtual void showDetails() const = 0;
+    string getModel() const { return model; }
+    virtual ~Vehicle() {}
 };
 
-class Circle : public Shape {
-private:
-    double radius;
-
+class Car : public Vehicle {    //derived class Car
 public:
-    Circle(double r) : radius(r) {}//constr
-
-    void draw() const override {//drawing
-        std::cout << "Drawing a circle with r=" << radius << std::endl;
-    }
-    double area() const override {//area with pi
-        return M_PI * radius * radius;
-    }
-    void setRadius(double newR) {//setting new radius
-        radius = newR;
-    }
-    double getRadius() const {//getting radius
-        return radius;
+    Car(const string& mdl) : Vehicle(mdl) {}
+    void showDetails() const override {
+        cout << "Car Model: " << model << endl; //printing model
     }
 };
 
-class Rectangle : public Shape {
-private:
-    double width;
-    double height;
-
+class Truck : public Vehicle {  //derived class Truck
+    int loadCapacity;           //capacity of tons
 public:
-    Rectangle(double w, double h) : width(w), height(h) {}//constr
-
-    void draw() const override {//draw
-        std::cout << "Drawing a rectangle with width=" << width << " and height=" << height << std::endl;
+    Truck(const string& mdl, int capacity) : Vehicle(mdl), loadCapacity(capacity) {}
+    void showDetails() const override {
+        cout << "Truck Model:   " << model << ", Load Capacity:   " << loadCapacity << " tons" << endl; //printing result
     }
-
-    double area() const override {//area
-        return width * height;
+    int getLoadCapacity() const {
+        return loadCapacity;
     }
 };
 
-void updateRadius(Shape* shape, double newRadius) {//updating the radius
-    Circle* circle = dynamic_cast<Circle*>(shape);
-    if (circle) {
-        std::cout << "Updating r of the circle of=" << circle->getRadius() << ", to r=" << newRadius << std::endl;
-        circle->setRadius(newRadius);
-    } 
-    else {
-        std::cout << "This shape isnt circle, cant modify" << std::endl;
+template <typename T>           //class template Fleet<T>
+class Fleet {
+    vector<shared_ptr<T>> vehicles; //aggregation: storing vehicles in <vector>
+public:
+    void addVehicle(shared_ptr<T> vehicle) {    //add vehicle
+        vehicles.push_back(vehicle);
     }
-}
+    void showDetails() const {
+        for (const auto& vehicle : vehicles) {  //show details
+            vehicle->showDetails();
+        }
+    }
+    void removeVehicle(const string& model) {   //remove vehicle
+        vehicles.erase(remove_if(vehicles.begin(), vehicles.end(), [&model](const shared_ptr<T>& vehicle) {return vehicle->getModel() == model;}), vehicles.end());
+    }
+};
 
-int main() {
-    int input;
-    std::cout << "Choose a shape to create:\n     1. Circle\n     2. Rectangle\nEnter input as [1] or [2]:     "; //taking user input
-    std::cin >> input;
-    Shape* newshape = nullptr;
-    if (input == 1) {//if circle
-        double radius;
-        std::cout << "Enter the radius of circle                : ";
-        std::cin >> radius;
-        newshape = new Circle(radius);
+template <>
+class Fleet<Truck> {    //specialization for Fleet<Truck> to calc total load capacity
+    vector<shared_ptr<Truck>> trucks;
+public:
+    void addVehicle(shared_ptr<Truck> truck)//addd vehicle
+        {trucks.push_back(truck);}
+    void showDetails() const {              //show details
+        int totalLoadCapacity = 0;
+        for (const auto& truck : trucks) {
+            truck->showDetails();
+            totalLoadCapacity += truck->getLoadCapacity();
+        }
+        cout << "Total Truck Load Capacity:   " << totalLoadCapacity << " tons" << endl;
     }
-    else if (input == 2) {//if rectangle
-        double width, height;
-        std::cout << "Enter the width and height of rectangle   : ";
-        std::cin >> width >> height;
-        newshape = new Rectangle(width, height);
+    void removeVehicle(const string& model) {//removing vehicle
+        trucks.erase(remove_if(trucks.begin(), trucks.end(), [&model](const shared_ptr<Truck>& truck) {return truck->getModel() == model;}), trucks.end());
     }
-    else {//if neither
-        std::cout << "Invalid input." << std::endl;
-        return 0;
-    }
-    newshape->draw();
-    std::cout << "Area of shape         :               " << newshape->area() << std::endl;
-    if (Circle* circle = dynamic_cast<Circle*>(newshape)) {
-        double newRadius;
-        std::cout << "Enter a new radius for the circle         : ";
-        std::cin >> newRadius;
-        updateRadius(newshape, newRadius);
-        circle->draw();
-        std::cout << "Updated area of circle        : " << circle->area() << std::endl;
-    }
-    else {
-        std::cout << "The shape is a rectangle, No radius modification needed   " << std::endl;
-    }
-    delete newshape; 
+};
+
+int main() {    //main for interacting with the user and app
+    Fleet<Car> carFleet;
+    Fleet<Truck> truckFleet;
+    int choice;
+    do {    //mapping input to the functions
+        cout << "\nChoose an option:    \n1. Add Car \n2. Add Truck \n3. Show Fleet Details \n4. Exit \n> ";
+        cin >> choice;
+        cin.ignore();
+        if (choice == 1) {
+            string carModel;
+            cout << "Enter Car Model:   ";
+            getline(cin, carModel);
+            carFleet.addVehicle(make_shared<Car>(carModel));
+        }
+        else if (choice == 2) {
+            string truckModel;
+            int loadCapacity;
+            cout << "Enter Truck Model: ";
+            getline(cin, truckModel);
+            cout << "Enter Load Capacity (tons):   ";
+            cin >> loadCapacity;
+            cin.ignore();
+            truckFleet.addVehicle(make_shared<Truck>(truckModel, loadCapacity));
+        }
+        else if (choice == 3) {
+            cout << "\nCar Fleet Details:   \n";
+            carFleet.showDetails();
+            cout << "\nTruck Fleet Details: \n";
+            truckFleet.showDetails();
+        }
+    } while (choice != 4);
+    cout << "Exiting the program " << endl;
     return 0;
 }
