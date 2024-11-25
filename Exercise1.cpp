@@ -3,41 +3,55 @@
 // Exercise 1
 
 #include <iostream>
+#include <vector>
+#include <algorithm>
+#include <string>
 
-class Date {
+class MyString {
 private:
-    int day, month, year;
+    std::string str;
+
 public:
-    Date(int d, int m, int y) : day(d), month(m), year(y) {} //date
-    void operator+(int n) {day += n;}                        //+ operator
-    void operator-(int n) {day -= n;}                        //- operator
-    //= operator
-    bool operator==(const Date& other) const {return year == other.year && month == other.month && day == other.day;}
-    //< operator
-    bool operator<(const Date& other) const {return year < other.year || (year == other.year && month < other.month) || (year == other.year && month == other.month && day < other.day);}
-    //> operator
-    bool operator>(const Date& other) const {return year > other.year || (year == other.year && month > other.month) || (year == other.year && month == other.month && day > other.day);}
-    void print() const {std::cout << day << "/" << month << "/" << year << std::endl;}
+    MyString(const std::string& s = "") : str(s) {} //constructor
+
+    MyString operator+(const MyString& other) const {return MyString(str + other.str);} //overloading +
+
+    bool operator==(const MyString& other) const {return str == other.str;} //overloading ==
+
+    friend std::ostream& operator<<(std::ostream& os, const MyString& myStr) { //overloading <<
+        os << myStr.str;
+        return os;
+    }
+
+    size_t length() const {return str.length();} //getting length of string
+
+    bool operator<(const MyString& other) const {return str < other.str;} //overloading < for alphabetical comparison
+};
+
+struct CompareByLength { //functor comparing by length
+    bool operator()(const MyString& a, const MyString& b) const {return a.length() < b.length();}
 };
 
 int main() {
-    Date date1(15, 5, 2023);
-    Date date2(24, 6, 2024);
-    Date date3(31, 5, 2023);
-    Date date4(30, 5, 2023);
-    Date date5(20, 3, 2023);
-    date1.print();
-    date2.print();
-    date3.print();
-    date4.print();
-    date5.print();
-    date1 + 5;
-    date2 - 2;
-    date1.print();
-    date2.print();
-    std::cout << "is first date earlier than second : " << std::boolalpha << (date1 < date2) << std::endl;
-    std::cout << "is first date earlier than third  : " << std::boolalpha << (date1 < date3) << std::endl;
-    std::cout << "is second date later than third   : " << std::boolalpha << (date2 > date4) << std::endl;
-    std::cout << "is thirs date the same as fourth  : " << std::boolalpha << (date3 == date4) << std::endl;
+    //myString objects
+    MyString str1("Hello");
+    MyString str2("World");
+    MyString str3("C++");
+    MyString str4("Programming");
+    //+ 2 strings
+    MyString concatenated = str1 + str2;
+    std::cout << "Concatenated String: " << concatenated << "\n";
+    //comparing for ==
+    std::cout << "Are String1 and String2 equal? " << (str1 == str2 ? "Yes" : "No") << "\n";
+    
+    //sorting vector of myString objects by length, then alphabetically of equal lengths
+    std::vector<MyString> myStrings = {str1, str2, str3, str4};
+    std::sort(myStrings.begin(), myStrings.end(), [](const MyString& a, const MyString& b) {
+        if (a.length() != b.length()) {return a.length() < b.length();}
+        return a < b;
+    });
+    std::cout << "Strings sorted alphabetically and by length: ";
+    for (const auto& s : myStrings) std::cout << s << " ";
+    std::cout << "\n";
     return 0;
 }
