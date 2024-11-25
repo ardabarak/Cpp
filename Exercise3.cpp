@@ -3,113 +3,64 @@
 // Exercise 3
 
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <vector>
-#include <stdexcept>
+#include <functional>
 
-class Employee {
-    int id;
-    std::string name;
-    std::string department;
+template <typename T>   //template
+class Container {       //class Container
+private:
+    std::vector<T> elements;
 
 public:
-    Employee() : id(0), name(""), department("") {}
+    void add(const T& element) {elements.push_back(element);} //adding elements
 
-    Employee(int id, const std::string& name, const std::string& department)
-        : id(id), name(name), department(department) {}
+    class Iterator {   //iterator class
+    private:
+        typename std::vector<T>::iterator current;
 
-    std::string toString() const { //to str
-        std::ostringstream oss;
-        oss << id << ", " << name << ", " << department;
-        return oss.str();
+    public:
+        Iterator(typename std::vector<T>::iterator it) : current(it) {} //constructor
+
+        T& operator*() {return *current;} //overload *
+
+        Iterator& operator++() {    //overload ++
+            ++current;
+            return *this;
+        }
+
+        Iterator& operator--() {    //overload --
+            --current;
+            return *this;
+        }
+
+        bool operator!=(const Iterator& other) const {return current != other.current;} //overload !=
+    };
+
+    Iterator begin() {return Iterator(elements.begin());} //begin iterator
+
+    Iterator end() {return Iterator(elements.end());} //end iterator
+
+    void forEach(const std::function<void(T&)>& func) { //forEach to apply a function or lambda
+        for (T& element : elements) {
+            func(element);
+        }
     }
-
-    static Employee fromString(const std::string& str) { //from str
-        std::istringstream iss(str);
-        std::string token;
-        int id;
-        std::string name, department;
-
-        std::getline(iss, token, ',');
-        id = std::stoi(token);
-        std::getline(iss, name, ',');
-        std::getline(iss, department, ',');
-
-        return Employee(id, name, department);
-    }
-
-    friend void updateEmployeeDep(Employee& employee, const std::string& newDepartment);
-    friend Employee* findEmployeeByID(std::vector<Employee>& employees, int id);
 };
 
-void updateEmployeeDep(Employee& employee, const std::string& newDepartment) { //update employees department
-    employee.department = newDepartment;
-    std::cout << "Department updated successfully." << std::endl;
-}
-
-void readEmployeesFromFile(const std::string& filename, std::vector<Employee>& employees) { //read employees from txt
-    std::ifstream file(filename);
-    if (!file.is_open()) {throw std::runtime_error("Cannot open file.");}
-
-    std::string line;
-    while (std::getline(file, line)) {
-        employees.push_back(Employee::fromString(line));
-    }
-    file.close();
-}
-
-void writeEmployeesToFile(const std::string& filename, const std::vector<Employee>& employees) { //write emploee to txt
-    std::ofstream file(filename);
-    if (!file.is_open()) {
-        throw std::runtime_error("Cannot open file.");
-    }
-
-    for (const auto& employee : employees) {
-        file << employee.toString() << std::endl;
-    }
-
-    file.close();
-}
-
-Employee* findEmployeeByID(std::vector<Employee>& employees, int id) { //find employee by id
-    for (auto& employee : employees) {
-        if (employee.id == id) {return &employee;}
-    }
-    return nullptr;
-}
-
 int main() {
-    std::vector<Employee> employees;
-
-    try {
-        readEmployeesFromFile("employees.txt", employees);
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
-    }
-
-    int searchID;
-    std::cout << "Enter ID to search: ";
-    std::cin >> searchID;
-    Employee* employee = findEmployeeByID(employees, searchID);
-
-    if (employee) {
-        std::cout << "Found employee: " << employee->toString() << std::endl;
-        std::string newDepartment;
-        std::cout << "Enter new department for the employee: ";
-        std::cin >> newDepartment;
-        updateEmployeeDep(*employee, newDepartment);
-        std::cout << "Updated employee: " << employee->toString() << std::endl;
-    } 
-    else {std::cout << "Employee with ID " << searchID << " not found." << std::endl;}
-
-    try {
-        writeEmployeesToFile("employees.txt", employees);
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
-    }
-
+    Container<int> container; //creating a Container
+    //adding elements
+    container.add(1);
+    container.add(2);
+    container.add(3);
+    container.add(4);
+    //displaying with custom iterator
+    std::cout << "Elements in container: ";
+    for (auto it = container.begin(); it != container.end(); ++it) {std::cout << *it << " ";}
+    std::cout << "\n";
+    container.forEach([](int& value) { value *= 2; }); //modifying elements with forEach
+    std::cout << "Elements after modification: "; //displaying modified elements
+    for (auto it = container.begin(); it != container.end(); ++it) {std::cout << *it << " ";}
+    std::cout << "\n";
     return 0;
 }
