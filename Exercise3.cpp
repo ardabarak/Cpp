@@ -3,63 +3,113 @@
 // Exercise 3
 
 #include <iostream>
-#include <string>
-#include <iomanip>
-using namespace std;
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <stdexcept>
 
-template <typename From, typename To>   //declaring base template 
-struct UnitConverter;
+class Employee {
+    int id;
+    std::string name;
+    std::string department;
 
-template <>
-struct UnitConverter<double, double> {  //specializing convert m->cm
-    static double convert(double value, const string& fromUnit, const string& toUnit) {
-        if (fromUnit == "m" && toUnit == "cm") {
-            return value * 100.0;  //1m     = 100cm
-        } else if (fromUnit == "cm" && toUnit == "m") {
-            return value / 100.0;  //100cm  = 1m
-        } else {
-            return value;  //if units are the same
-        }
+public:
+    Employee() : id(0), name(""), department("") {}
+
+    Employee(int id, const std::string& name, const std::string& department)
+        : id(id), name(name), department(department) {}
+
+    std::string toString() const { //to str
+        std::ostringstream oss;
+        oss << id << ", " << name << ", " << department;
+        return oss.str();
     }
+
+    static Employee fromString(const std::string& str) { //from str
+        std::istringstream iss(str);
+        std::string token;
+        int id;
+        std::string name, department;
+
+        std::getline(iss, token, ',');
+        id = std::stoi(token);
+        std::getline(iss, name, ',');
+        std::getline(iss, department, ',');
+
+        return Employee(id, name, department);
+    }
+
+    friend void updateEmployeeDep(Employee& employee, const std::string& newDepartment);
+    friend Employee* findEmployeeByID(std::vector<Employee>& employees, int id);
 };
 
-template <>
-struct UnitConverter<int, int> {    //overloading for integer for int -> int
-    static int convert(int value, const string& fromUnit, const string& toUnit) {
-        if (fromUnit == "m" && toUnit == "cm") {
-            return value * 100;  //1m     = 100cm
-        } else if (fromUnit == "cm" && toUnit == "m") {
-            return value / 100;  //100cm  = 1m
-        } else {
-            return value;  //if units are the same
-        }
-    }
-};
+void updateEmployeeDep(Employee& employee, const std::string& newDepartment) { //update employees department
+    employee.department = newDepartment;
+    std::cout << "Department updated successfully." << std::endl;
+}
 
-template <typename T>
-void performConversion() {  //funct for user input and conversion
-    T value;
-    string fromUnit, toUnit;
-    cout << "Enter value to convert:    ";
-    cin >> value;
-    cout << "Convert From [cm, m]:      ";
-    cin >> fromUnit;
-    cout << "Convert To [cm, m]:        ";
-    cin >> toUnit;
-    T result = UnitConverter<T, T>::convert(value, fromUnit, toUnit);   //using UnitConverter struct for conversion
-    cout << fixed << setprecision(2);                                   //displaying results with 2 decimal places for floats
-    cout << value << " " << fromUnit << " is " << result << " " << toUnit << endl;
+void readEmployeesFromFile(const std::string& filename, std::vector<Employee>& employees) { //read employees from txt
+    std::ifstream file(filename);
+    if (!file.is_open()) {throw std::runtime_error("Cannot open file.");}
+
+    std::string line;
+    while (std::getline(file, line)) {
+        employees.push_back(Employee::fromString(line));
+    }
+    file.close();
+}
+
+void writeEmployeesToFile(const std::string& filename, const std::vector<Employee>& employees) { //write emploee to txt
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Cannot open file.");
+    }
+
+    for (const auto& employee : employees) {
+        file << employee.toString() << std::endl;
+    }
+
+    file.close();
+}
+
+Employee* findEmployeeByID(std::vector<Employee>& employees, int id) { //find employee by id
+    for (auto& employee : employees) {
+        if (employee.id == id) {return &employee;}
+    }
+    return nullptr;
 }
 
 int main() {
-    char choice;
-    cout << "Select input type [i for int, f for float]:    ";    //taking input as either integer or double
-    cin >> choice;
-    if (choice == 'i')          //if int
-        {performConversion<int>();} 
-    else if (choice == 'f')     //if float
-        {performConversion<double>();} 
-    else 
-        {cout << "Invalid input type " << endl;}
+    std::vector<Employee> employees;
+
+    try {
+        readEmployeesFromFile("employees.txt", employees);
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+
+    int searchID;
+    std::cout << "Enter ID to search: ";
+    std::cin >> searchID;
+    Employee* employee = findEmployeeByID(employees, searchID);
+
+    if (employee) {
+        std::cout << "Found employee: " << employee->toString() << std::endl;
+        std::string newDepartment;
+        std::cout << "Enter new department for the employee: ";
+        std::cin >> newDepartment;
+        updateEmployeeDep(*employee, newDepartment);
+        std::cout << "Updated employee: " << employee->toString() << std::endl;
+    } 
+    else {std::cout << "Employee with ID " << searchID << " not found." << std::endl;}
+
+    try {
+        writeEmployeesToFile("employees.txt", employees);
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+
     return 0;
 }
