@@ -3,55 +3,59 @@
 // Exercise 1
 
 #include <iostream>
-#include <vector>
-#include <algorithm>
+#include <queue>
 #include <string>
 
-class MyString {
-private:
-    std::string str;
-
-public:
-    MyString(const std::string& s = "") : str(s) {} //constructor
-
-    MyString operator+(const MyString& other) const {return MyString(str + other.str);} //overloading +
-
-    bool operator==(const MyString& other) const {return str == other.str;} //overloading ==
-
-    friend std::ostream& operator<<(std::ostream& os, const MyString& myStr) { //overloading <<
-        os << myStr.str;
-        return os;
-    }
-
-    size_t length() const {return str.length();} //getting length of string
-
-    bool operator<(const MyString& other) const {return str < other.str;} //overloading < for alphabetical comparison
+struct Patient {
+    std::string name;
+    int severity;
+    int order_of_arrival;
+    Patient(const std::string& num, int se, int ordarva) : name(num), severity(se), order_of_arrival(ordarva) {}
 };
 
-struct CompareByLength { //functor comparing by length
-    bool operator()(const MyString& a, const MyString& b) const {return a.length() < b.length();}
-};
+bool operator<(const Patient& p1, const Patient& p2) {
+    if (p1.severity == p2.severity) {return p1.order_of_arrival > p2.order_of_arrival;} //firsts served first
+    return p1.severity < p2.severity; //greater served first
+}
+
 
 int main() {
-    //myString objects
-    MyString str1("Hello");
-    MyString str2("World");
-    MyString str3("C++");
-    MyString str4("Programming");
-    //+ 2 strings
-    MyString concatenated = str1 + str2;
-    std::cout << "Concatenated String: " << concatenated << "\n";
-    //comparing for ==
-    std::cout << "Are String1 and String2 equal? " << (str1 == str2 ? "Yes" : "No") << "\n";
-    
-    //sorting vector of myString objects by length, then alphabetically of equal lengths
-    std::vector<MyString> myStrings = {str1, str2, str3, str4};
-    std::sort(myStrings.begin(), myStrings.end(), [](const MyString& a, const MyString& b) {
-        if (a.length() != b.length()) {return a.length() < b.length();}
-        return a < b;
-    });
-    std::cout << "Strings sorted alphabetically and by length: ";
-    for (const auto& s : myStrings) std::cout << s << " ";
-    std::cout << "\n";
+    std::priority_queue<Patient> patients;
+    bool exit_program = false;
+    int choice = 0;
+    int arrival_counter = 0;
+
+    while (!exit_program) {
+        std::cout << "1. Add Patient\n2. Serve Patient\n3. Exit\n";
+        std::cout << "Enter your choice : ";
+        std::cin >> choice;
+
+        switch (choice) {
+            case 1: {
+                std::string name;
+                int severity;
+                std::cout << "Enter patient's name  : ";
+                std::cin >> name;
+                std::cout << "Enter patient's condition severity (1-10, with 10 being most severe)  : ";
+                std::cin >> severity;
+                arrival_counter++;
+                patients.emplace(name, severity, arrival_counter);
+                std::cout << "Patient added : " << name << " with severity  : " << severity << std::endl;
+                break;}
+            case 2: {
+                if (patients.empty()) {std::cout << "no patients to be served" << std::endl;} 
+                else {
+                    while (!patients.empty()) {
+                        const Patient& current_patient = patients.top();
+                        std::cout << "Serving   : " << current_patient.name << " with severity  : " << current_patient.severity << std::endl;
+                        patients.pop();}
+                    }
+                break;}
+            case 3: {
+                exit_program = true;
+                break;}
+            default: std::cout << "invalid choice, please try again " << std::endl;
+        }
+    }
     return 0;
 }
