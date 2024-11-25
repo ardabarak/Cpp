@@ -3,77 +3,71 @@
 // Exercise 2
 
 #include <iostream>
-#include <fstream>
-#include <string>
-#include <ctime>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <numeric>
+#include <functional>
 #include <sstream>
-#include <stdexcept>
 
-enum class LogLevel {Info,Warning,Error};
-
-std::string toString(LogLevel level) {
-    switch (level) {
-    case LogLevel::Info:
-        return "INFO";
-    case LogLevel::Warning:
-        return "WARNING";
-    case LogLevel::Error:
-        return "ERROR";
-    default:
-        return "UNKNOWN";
-    }
-}
-
-class Logger {
+class DataAnalysis {
 private:
-    std::ofstream logFile;
-
-    std::string currentTime() const {//current time
-        std::time_t now = std::time(nullptr);
-        char buffer[80];
-        std::tm* localtm = std::localtime(&now);
-        std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localtm);
-        return std::string(buffer);
-    }
+    std::vector<double> stockPrices;
 
 public:
-    void openLogFile(const std::string& filename) {//open
-        logFile.open(filename, std::ios_base::app);
-        if (!logFile.is_open()) {throw std::runtime_error("Cannot open file.");}
+    void addPrice(double price) {stockPrices.push_back(price);}//adding stock prices
+
+    std::vector<double> filterPrices(const std::function<bool(double)>& filterFunc) const { //filtering stock prices with lambda
+        std::vector<double> filtered;
+        for (double price : stockPrices) {
+            if (filterFunc(price)) {
+                filtered.push_back(price);
+            }
+        }
+        return filtered;
     }
 
-    void closeLogFile() {if (logFile.is_open()) //close
-        {logFile.close();}}
+    class Average { //functor for average
+    public:
+        double operator()(const std::vector<double>& data) const {
+            if (data.empty()) return 0.0;
+            double sum = std::accumulate(data.begin(), data.end(), 0.0);
+            return sum / data.size();
+        }
+    };
 
-    Logger& operator<<(const std::string& message) { //<< operator
-        if (logFile.is_open()) {logFile << currentTime() << " " << message << std::endl;}
-        return *this;
-    }
-    //logging message withspecific log level
-    void logWithLevel(const std::string& message, LogLevel level) {*this << "[" + toString(level) + "] " + message;}
+    class StandardDeviation { //functor for standard deviation
+    public:
+        double operator()(const std::vector<double>& data) const {
+            if (data.size() < 2) return 0.0;
+            Average avg;
+            double mean = avg(data);
+            double sqSum = std::accumulate(data.begin(), data.end(), 0.0,[mean](double acc, double x) { return acc + (x - mean) * (x - mean); });
+            return std::sqrt(sqSum / (data.size() - 1));
+        }
+    };
+    const std::vector<double>& getPrices() const {return stockPrices;}
 };
 
 int main() {
-    Logger logger;
-    try {
-        logger.openLogFile("log.txt");
-        logger << "[INFO] Application started.  ";
-        logger << "[WARNING] Warning message.   ";
-        logger << "[ERROR] Error message.       ";
-        logger.logWithLevel("System message.    ", LogLevel::Info);
-        logger.logWithLevel("Memory message.    ", LogLevel::Warning);
-        logger.logWithLevel("Program message.   ", LogLevel::Error);
-        logger.closeLogFile();
-    } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
-    }
+    DataAnalysis analysis;
+    std::cout << "Enter stock prices separated by spaces: ";//input stock prices
+    std::string inputLine;
+    std::getline(std::cin, inputLine);
+    std::istringstream stream(inputLine);
+
+    double price;
+    while (stream >> price) {analysis.addPrice(price);}
+    auto filteredPrices = analysis.filterPrices([](double price) { return price > 100.0; });//filtering prices above 100
+    std::cout << "Prices above 100:     ";//outputting filtered prices
+
+    for (double p : filteredPrices) {std::cout << p << " ";}
+    std::cout << "\n";
+    DataAnalysis::Average avg;              //calculate average 
+    DataAnalysis::StandardDeviation stdDev; //calc standard deviation
+    double averagePrice = avg(analysis.getPrices());
+    double standardDeviation = stdDev(analysis.getPrices());
+    std::cout << "Average price:        " << averagePrice << "\n";
+    std::cout << "Standard deviation of prices: " << standardDeviation << "\n";
     return 0;
 }
-// copy of the output of the log.txt
-/* 2024-11-09 19:01:38 [INFO] Application started.  
-2024-11-09 19:01:38 [WARNING] Warning message.   
-2024-11-09 19:01:38 [ERROR] Error message.       
-2024-11-09 19:01:38 [INFO] System message.    
-2024-11-09 19:01:38 [WARNING] Memory message.    
-2024-11-09 19:01:38 [ERROR] Program message.   
- */
