@@ -4,48 +4,100 @@
 
 #include <iostream>
 #include <map>
-#include <memory>
+#include <set>
 #include <string>
+#include <memory>
+using namespace std;
 
-class Sensor {  //base class
+class Student {
 public:
-    virtual ~Sensor() = default;
+    string studentID;
+    map<string, int> subjects;
+    explicit Student(const string& id) : studentID(id) {}
+    void updateScore(const string& subject, int score) {subjects[subject] = score;}
 
-    virtual void handleEvent() const = 0; //virtual function
+    int getScore(const string& subject) const {//getting score
+        auto it = subjects.find(subject);
+        return it != subjects.end() ? it->second : -1;
+    }
 
-    static void handleSensorEvent(const Sensor* sensor) {sensor->handleEvent();} //static method for event handling
-};
-
-class TemperatureSensor : public Sensor {  //derived class for TemperatureSensor
-public:
-    void handleEvent() const override {
-        std::cout << "Handling temperature sensor event.\n";
+    void display() const {//showing
+        cout << "Student ID: " << studentID << endl;
+        if (subjects.empty()) {cout << "  No subjects recorded yet" << endl;} 
+        else {
+            for (const auto& subject : subjects) 
+                {cout << "  " << subject.first << " : " << subject.second << endl;}
+            }
     }
 };
 
-class PressureSensor : public Sensor {    //derived class for PressureSensor
+class StudentManager {
+private:
+    set<shared_ptr<Student>> students;
+    shared_ptr<Student> findStudent(const string& studentID) const {
+        for (const auto& student : students) {
+            if (student->studentID == studentID) {return student;}
+        }
+        return nullptr;
+    }
+
 public:
-    void handleEvent() const override {
-        std::cout << "Handling pressure sensor event.\n";
+    void addStudent(const string& studentID) {//adding stdents
+        if (findStudent(studentID)) {
+            cout << "Student with ID    " << studentID << " already exists" << endl;
+            return;}
+        students.insert(make_shared<Student>(studentID));
+        cout << "Student with ID    " << studentID << " added successfully" << endl;
+    }
+
+    void updateStudentScore(const string& studentID, const string& subject, int score) {//updating grades
+        auto student = findStudent(studentID);
+        if (student) {
+            student->updateScore(subject, score);
+            cout   << "Score for subject    '" << subject << "' updated to  " << score << endl;} 
+        else {cout << "Student with ID      " << studentID << " not found   " << endl;}
+    }
+
+    void displayStudentRecord(const string& studentID) const {//showing student record
+        auto student = findStudent(studentID);
+        if (student) {student->display();} 
+        else {cout << "Student with ID " << studentID << " not found." << endl;}
     }
 };
 
 int main() {
-    //creating sensors
-    std::unique_ptr<Sensor> tempSensor1 = std::make_unique<TemperatureSensor>();
-    std::unique_ptr<Sensor> pressureSensor1 = std::make_unique<PressureSensor>();
-    //mapping sensor ids to pointers
-    std::map<std::string, void(*)(const Sensor*)> sensorMap;
-    sensorMap["TEMP SENSOR 1"] = &Sensor::handleSensorEvent;
-    sensorMap["PRESSURE SENSOR 1"] = &Sensor::handleSensorEvent;
-    //mapping sensor ids to objects
-    std::map<std::string, Sensor*> sensorObjects;
-    sensorObjects["TEMP SENSOR 1"] = tempSensor1.get();
-    sensorObjects["PRESSURE SENSOR 1"] = pressureSensor1.get();
-    std::cout << "Simulating events:\n";
-    for (const auto& entry : sensorMap) {
-        std::cout << "Event from " << entry.first << ": ";
-        entry.second(sensorObjects[entry.first]);
+    StudentManager manager;
+    bool exit = false;
+    while (!exit) {
+        cout << "\n1. Add Student\n2. Update Student Score\n3. Display Student Record\n4. Exit\n";
+        cout << "Enter your choice  : ";
+        int choice;
+        cin >> choice;
+        string studentID, subject;
+        int score;
+        switch (choice) {
+            case 1: {
+                cout << "Enter student ID   : ";
+                cin >> studentID;
+                manager.addStudent(studentID);
+                break;}
+            case 2: {
+                cout << "Enter student ID   : ";
+                cin >> studentID;
+                cout << "Enter subject name : ";
+                cin >> subject;
+                cout << "Enter score    : ";
+                cin >> score;
+                manager.updateStudentScore(studentID, subject, score);
+                break;}
+            case 3: {
+                cout << "Enter student ID   : ";
+                cin >> studentID;
+                manager.displayStudentRecord(studentID);
+                break;}
+            case 4: {exit = true;   break;}
+            default:{cout << "Invalid choice please try again" << endl;}
+        }
     }
     return 0;
 }
